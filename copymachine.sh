@@ -38,11 +38,11 @@ do
       if [ $? -ne 0 ]; then
           qdbus $dbusRef org.kde.kdialog.ProgressDialog.close
           kdialog --yesnocancel "Was möchten Sie mit dem Dokument $SCAN_DIR/$OUTFILE_BASE.tiff machen?" --yes-label "Nichts" --no-label "Bearbeiten" --cancel-label "Drucken"
-          if [ $? -eq 2 ]; then
+          if [ $? -eq 1 ]; then
+            gimp $SCAN_DIR/$OUTFILE_BASE.tiff
+          elif [ $? -eq 2 ]; then
             imageToPDF $SCAN_DIR/$OUTFILE_BASE.tiff $SCAN_DIR/$OUTFILE_BASE.pdf
             lp $SCAN_DIR/$OUTFILE_BASE.pdf
-          elif [ $? -eq 1 ]; then
-            gimp $SCAN_DIR/$OUTFILE_BASE.tiff
           fi
           break
       fi
