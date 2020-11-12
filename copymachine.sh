@@ -1,6 +1,8 @@
 #!/bin/bash
 
-SCANBD_DEVICE="genesys:libusb:003:005"
+DEV=`lsusb|grep "LiDE 210" | cut -d " " -f 2,4| sed 's/\([0-9]*\) \([0-9]*\):/\1:\2/'`
+
+SCANBD_DEVICE="genesys:libusb:$DEV"
 SCAN_DIR=/data/scanned
 NOW=`date +%F_%H%M%S`
 OUTFILE_BASE=scan-$NOW
