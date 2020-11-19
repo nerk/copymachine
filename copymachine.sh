@@ -4,10 +4,8 @@ DEV=`lsusb|grep "LiDE 210" | cut -d " " -f 2,4| sed 's/\([0-9]*\) \([0-9]*\):/\1
 
 SCANBD_DEVICE="genesys:libusb:$DEV"
 SCAN_DIR=/data/scanned
-NOW=`date +%F_%H%M%S`
-OUTFILE_BASE=scan-$NOW
 
-DPI=150
+DPI=90
 
 function imageToPDF {
     source=$1
@@ -22,15 +20,45 @@ function imageToPDF {
 function scanPage {
     scanimage -d $SCANBD_DEVICE --resolution 300 --mode Color \
          --depth 8 --format=tiff | convert - -gravity east -chop 60x0 \
-         -level 3%,80%,0.6 $SCAN_DIR/$OUTFILE_BASE.tiff 
+         -level 3%,80%,0.6 $TIFF_FILE 
+
+    imageToPDF $TIFF_FILE $PDF_FILE 
 }
+
+function sendEmail {
+    for i in "${files[@]}"
+    do
+       attachment="file://$i"
+       if [ "$attachments" = "" ]; then
+           attachments="attachment='$attachment"
+       else
+           attachments="$attachments,$attachment"
+       fi
+    done
+    attachments="$attachments'"
+    thunderbird -compose "subject=Dateien,$attachments" &
+}
+
+declare -a files=()
 
 while true
 do
-  kdialog --yesno "Bitte Dokument in den Scanner legen und danach 'Weiter' drücken." --yes-label "Weiter" --no-label "Abbruch"
+  NOW=`date +%F_%H%M%S`
+  OUTFILE_BASE=scan-$NOW
+
+  TIFF_FILE=$SCAN_DIR/$OUTFILE_BASE.tiff
+  PDF_FILE=$SCAN_DIR/$OUTFILE_BASE.pdf
+
+  kdialog --yesno "Bitte Dokument in den Scanner legen und danach 'Scannen' oder 'Fertig' drücken." --yes-label "Weiter" --no-label "Fertig"
   if [ $? -ne 0 ]; then
-    exit 1
+      kdialog --yesno "Email mit den Dokumenten senden?" --yes-label "Ja" --no-label "Nein"
+      r=$?
+      if [ $r -eq 0 -a ${#files[@]} -gt 0 ]; then
+          sendEmail
+      fi
+      exit 1
   fi
+
   dbusRef=`kdialog --progressbar "Dokument wir gescanned..." 16`
   scanPage  &
   num=0
@@ -39,12 +67,14 @@ do
       ps -C scanimage >/dev/null
       if [ $? -ne 0 ]; then
           qdbus $dbusRef org.kde.kdialog.ProgressDialog.close
-          kdialog --yesnocancel "Was möchten Sie mit dem Dokument $SCAN_DIR/$OUTFILE_BASE.tiff machen?" --yes-label "Nichts" --no-label "Bearbeiten" --cancel-label "Drucken"
-          if [ $? -eq 1 ]; then
-            gimp $SCAN_DIR/$OUTFILE_BASE.tiff
-          elif [ $? -eq 2 ]; then
-            imageToPDF $SCAN_DIR/$OUTFILE_BASE.tiff $SCAN_DIR/$OUTFILE_BASE.pdf
-            lp $SCAN_DIR/$OUTFILE_BASE.pdf
+          kdialog --yesnocancel "Was möchten Sie mit dem Dokument $TIFF_FILE machen?" --yes-label "Weiter" --no-label "Bearbeiten" --cancel-label "Drucken"
+          r=$?
+          if [ $r -eq 1 ]; then
+            gimp $TIFF_FILE
+          elif [ $r -eq 2 ]; then
+            lp PDF_FILE.pdf
+	  else 
+            files+=( $PDF_FILE )
           fi
           break
       fi
@@ -53,3 +83,5 @@ do
       qdbus $dbusRef Set org.kde.kdialog.ProgressDialog value $num
   done
 done
+
+
