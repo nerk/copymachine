@@ -49,7 +49,7 @@ do
   TIFF_FILE=$SCAN_DIR/$OUTFILE_BASE.tiff
   PDF_FILE=$SCAN_DIR/$OUTFILE_BASE.pdf
 
-  kdialog --yesno "Bitte Dokument in den Scanner legen und danach 'Scannen' oder 'Fertig' drücken." --yes-label "Weiter" --no-label "Fertig"
+  kdialog --yesno "Bitte Dokument in den Scanner legen und danach 'Scannen' oder 'Fertig' drücken." --yes-label "Scannen" --no-label "Fertig"
   if [ $? -eq 1 ]; then
       if [ ${#files[@]} -gt 0 ]; then
           kdialog --yesno "Email mit den Dokumenten senden?" --yes-label "Ja" --no-label "Nein"
@@ -85,5 +85,4 @@ do
       qdbus $dbusRef Set org.kde.kdialog.ProgressDialog value $num
   done
 done
-
 
