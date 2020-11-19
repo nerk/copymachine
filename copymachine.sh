@@ -50,11 +50,12 @@ do
   PDF_FILE=$SCAN_DIR/$OUTFILE_BASE.pdf
 
   kdialog --yesno "Bitte Dokument in den Scanner legen und danach 'Scannen' oder 'Fertig' drücken." --yes-label "Weiter" --no-label "Fertig"
-  if [ $? -ne 0 ]; then
-      kdialog --yesno "Email mit den Dokumenten senden?" --yes-label "Ja" --no-label "Nein"
-      r=$?
-      if [ $r -eq 0 -a ${#files[@]} -gt 0 ]; then
-          sendEmail
+  if [ $? -eq 1 ]; then
+      if [ ${#files[@]} -gt 0 ]; then
+          kdialog --yesno "Email mit den Dokumenten senden?" --yes-label "Ja" --no-label "Nein"
+          if [ $? -eq 0 ]; then
+              sendEmail
+          fi
       fi
       exit 1
   fi
@@ -66,15 +67,16 @@ do
   do
       ps -C scanimage >/dev/null
       if [ $? -ne 0 ]; then
+
+          files+=( $PDF_FILE )
+
           qdbus $dbusRef org.kde.kdialog.ProgressDialog.close
           kdialog --yesnocancel "Was möchten Sie mit dem Dokument $TIFF_FILE machen?" --yes-label "Weiter" --no-label "Bearbeiten" --cancel-label "Drucken"
           r=$?
           if [ $r -eq 1 ]; then
             gimp $TIFF_FILE
           elif [ $r -eq 2 ]; then
-            lp PDF_FILE.pdf
-	  else 
-            files+=( $PDF_FILE )
+            lp $PDF_FILE
           fi
           break
       fi
