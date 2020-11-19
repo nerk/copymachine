@@ -50,7 +50,12 @@ do
   PDF_FILE=$SCAN_DIR/$OUTFILE_BASE.pdf
 
   kdialog --yesno "Bitte Dokument in den Scanner legen und danach 'Scannen' oder 'Fertig' drücken." --yes-label "Scannen" --no-label "Fertig"
-  if [ $? -eq 1 ]; then
+  r=$?
+  if [ $r -eq 2 ]; then
+      exit 1
+  fi
+
+  if [ $r -eq 1 ]; then
       if [ ${#files[@]} -gt 0 ]; then
           kdialog --yesno "Email mit den Dokumenten senden?" --yes-label "Ja" --no-label "Nein"
           if [ $? -eq 0 ]; then
@@ -59,6 +64,7 @@ do
       fi
       exit 1
   fi
+
 
   dbusRef=`kdialog --progressbar "Dokument wir gescanned..." 16`
   scanPage  &
